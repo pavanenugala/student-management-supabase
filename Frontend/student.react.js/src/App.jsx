@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import axios from "axios";
 import "./App.css";
@@ -7,6 +8,12 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
+
+  // CREATE NEW ACCOUNT
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [newUserId, setNewUserId] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // STUDENT FORM
   const [firstName, setFirstName] = useState("");
@@ -23,12 +30,95 @@ function App() {
   // API URL
   const API_URL = "https://localhost:7043/api/Students";
 
+  // EXISTING DEMO USERS
+  const defaultUsers = [
+    {
+      userId: "pavanreddy",
+      password: "Pavan@123",
+    },
+    {
+      userId: "studentuser",
+      password: "Student@123",
+    },
+  ];
+
+  // CREATE NEW ACCOUNT
+  function handleCreateAccount(event) {
+    event.preventDefault();
+
+    const trimmedUserId = newUserId.trim();
+
+    if (!trimmedUserId || !newPassword || !confirmPassword) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert("Password must contain at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    const savedUsers = JSON.parse(
+      localStorage.getItem("studentAppUsers") || "[]"
+    );
+
+    const allUsers = [...defaultUsers, ...savedUsers];
+
+    const userExists = allUsers.some(
+      (user) =>
+        user.userId.toLowerCase() === trimmedUserId.toLowerCase()
+    );
+
+    if (userExists) {
+      alert("User ID already exists. Please choose another User ID.");
+      return;
+    }
+
+    const newUser = {
+      userId: trimmedUserId,
+      password: newPassword,
+    };
+
+    localStorage.setItem(
+      "studentAppUsers",
+      JSON.stringify([...savedUsers, newUser])
+    );
+
+    alert("Account created successfully! Please login.");
+
+    setNewUserId("");
+    setNewPassword("");
+    setConfirmPassword("");
+
+    setUserId(trimmedUserId);
+    setPassword("");
+    setShowCreateAccount(false);
+  }
+
   // LOGIN
   function handleLogin(event) {
     event.preventDefault();
 
-    if (userId === "pavanreddy" && password === "Pavan@123") {
+    const savedUsers = JSON.parse(
+      localStorage.getItem("studentAppUsers") || "[]"
+    );
+
+    const allUsers = [...defaultUsers, ...savedUsers];
+
+    const validUser = allUsers.find(
+      (user) =>
+        user.userId === userId.trim() &&
+        user.password === password
+    );
+
+    if (validUser) {
       setIsLoggedIn(true);
+      alert("Login successful!");
     } else {
       alert("Invalid User ID or Password");
     }
@@ -51,6 +141,11 @@ function App() {
       return;
     }
 
+    if (mobileNumber.length !== 10) {
+      alert("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
     const newStudent = {
       id: 0,
       firstName: firstName,
@@ -69,7 +164,10 @@ function App() {
 
       alert("Student registered successfully!");
 
-      setStudents([...students, newStudent]);
+      setStudents((previousStudents) => [
+        ...previousStudents,
+        newStudent,
+      ]);
 
       // CLEAR FORM
       setFirstName("");
@@ -91,36 +189,118 @@ function App() {
     setIsLoggedIn(false);
     setUserId("");
     setPassword("");
+    setShowCreateAccount(false);
   }
 
-  // LOGIN PAGE
+  // LOGIN AND CREATE ACCOUNT PAGE
   if (!isLoggedIn) {
     return (
       <div className="login-page">
         <div className="login-box">
-          <h1>Login Page</h1>
 
-          <form onSubmit={handleLogin}>
-            <label>User ID</label>
+          {!showCreateAccount ? (
+            <>
+              <h1>Login Page</h1>
 
-            <input
-              type="text"
-              placeholder="Enter User ID"
-              value={userId}
-              onChange={(event) => setUserId(event.target.value)}
-            />
+              <form onSubmit={handleLogin}>
+                <label>User ID</label>
 
-            <label>Password</label>
+                <input
+                  type="text"
+                  placeholder="Enter User ID"
+                  value={userId}
+                  onChange={(event) =>
+                    setUserId(event.target.value)
+                  }
+                  required
+                />
 
-            <input
-              type="password"
-              placeholder="Enter Password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
+                <label>Password</label>
 
-            <button type="submit">Login</button>
-          </form>
+                <input
+                  type="password"
+                  placeholder="Enter Password"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  required
+                />
+
+                <button type="submit">Login</button>
+              </form>
+
+              <p>Don't have an account?</p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateAccount(true);
+                  setNewUserId("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+              >
+                Create New Account
+              </button>
+            </>
+          ) : (
+            <>
+              <h1>Create New Account</h1>
+
+              <form onSubmit={handleCreateAccount}>
+                <label>User ID</label>
+
+                <input
+                  type="text"
+                  placeholder="Create User ID"
+                  value={newUserId}
+                  onChange={(event) =>
+                    setNewUserId(event.target.value)
+                  }
+                  required
+                />
+
+                <label>Password</label>
+
+                <input
+                  type="password"
+                  placeholder="Create Password"
+                  value={newPassword}
+                  onChange={(event) =>
+                    setNewPassword(event.target.value)
+                  }
+                  minLength={6}
+                  required
+                />
+
+                <label>Confirm Password</label>
+
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(event) =>
+                    setConfirmPassword(event.target.value)
+                  }
+                  required
+                />
+
+                <button type="submit">
+                  Create Account
+                </button>
+              </form>
+
+              <p>Already have an account?</p>
+
+              <button
+                type="button"
+                onClick={() => setShowCreateAccount(false)}
+              >
+                Back to Login
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -132,7 +312,10 @@ function App() {
       <header>
         <h1>Student Management System</h1>
 
-        <button className="logout-button" onClick={handleLogout}>
+        <button
+          className="logout-button"
+          onClick={handleLogout}
+        >
           Logout
         </button>
       </header>
@@ -142,58 +325,72 @@ function App() {
 
         <form onSubmit={handleRegister}>
           <label>First Name</label>
+
           <input
             type="text"
             placeholder="Enter First Name"
             value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
+            onChange={(event) =>
+              setFirstName(event.target.value)
+            }
           />
 
           <label>Last Name</label>
+
           <input
             type="text"
             placeholder="Enter Last Name"
             value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
+            onChange={(event) =>
+              setLastName(event.target.value)
+            }
           />
 
           <label>Email</label>
+
           <input
             type="email"
             placeholder="Enter Email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) =>
+              setEmail(event.target.value)
+            }
           />
 
           <label>Age</label>
+
           <input
             type="number"
             placeholder="Enter Age"
             value={age}
-            onChange={(event) => setAge(event.target.value)}
+            onChange={(event) =>
+              setAge(event.target.value)
+            }
           />
 
           <label>Mobile Number</label>
 
-<input
-  type="text"
-  placeholder="Enter 10-digit Mobile Number"
-  value={mobileNumber}
-  maxLength={10}
-  onChange={(event) => {
-    const value = event.target.value;
+          <input
+            type="text"
+            placeholder="Enter 10-digit Mobile Number"
+            value={mobileNumber}
+            maxLength={10}
+            onChange={(event) => {
+              const value = event.target.value;
 
-    // Allow numbers only
-    if (/^\d*$/.test(value)) {
-      setMobileNumber(value);
-    }
-  }}
-/>
+              if (/^\d*$/.test(value)) {
+                setMobileNumber(value);
+              }
+            }}
+          />
 
           <label>Gender</label>
+
           <select
             value={gender}
-            onChange={(event) => setGender(event.target.value)}
+            onChange={(event) =>
+              setGender(event.target.value)
+            }
           >
             <option value="">Select Gender</option>
             <option value="Male">Male</option>
@@ -202,11 +399,14 @@ function App() {
           </select>
 
           <label>Course</label>
+
           <input
             type="text"
             placeholder="Enter Course"
             value={course}
-            onChange={(event) => setCourse(event.target.value)}
+            onChange={(event) =>
+              setCourse(event.target.value)
+            }
           />
 
           <button type="submit">Register</button>
@@ -222,7 +422,8 @@ function App() {
           students.map((student, index) => (
             <div className="student-card" key={index}>
               <p>
-                <strong>Name:</strong> {student.firstName} {student.lastName}
+                <strong>Name:</strong>{" "}
+                {student.firstName} {student.lastName}
               </p>
 
               <p>
